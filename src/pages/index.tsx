@@ -45,9 +45,7 @@ export default function Home({postsPagination}: HomeProps) {
     const [posts, setPosts] = useState<Post[]>(formmattedPost);
     const [nextPage, setNextPage] = useState(postsPagination.next_page);
     const [currentPage, setCurrentPage] = useState(1);
-    console.log(currentPage);
     
-
     async function handleNextPage(): Promise<void> {
       if (currentPage !== 1 && nextPage === null) {
         return;
@@ -55,10 +53,26 @@ export default function Home({postsPagination}: HomeProps) {
 
       const postResults = await fetch(`${nextPage}`)
       .then(response => response.json());
+      setNextPage(postResults.next_page);
+      setCurrentPage(postResults.page);
 
-      console.log(postResults);
-
-      setNextPage(postResults.next_page)
+      const newPosts= postResults.results.map(post => {
+      return {
+        uid:post.uid,
+        first_publication_date: format(new Date(post.first_publication_date), 'dd MMM yyyy',
+          {
+            locale: ptBR,
+          }
+        ),
+        data: {
+          title: post.data.title,
+          subtitle: post.data.subtitle,
+          author: post.data.author,
+        },       
+      }
+      });
+      
+      setPosts([...posts, ...newPosts]);
     }
 
     
@@ -91,9 +105,9 @@ export default function Home({postsPagination}: HomeProps) {
                 </Link>
               ))              
               }
-            <button type="button" onClick={handleNextPage}>
+            { nextPage && (<button type="button" onClick={handleNextPage}>
               Carregar mais posts
-            </button>
+            </button>)}
             </section>
         </main>
       </>
@@ -123,9 +137,6 @@ export const getStaticProps: GetStaticProps = async () => {
     next_page: postsResponse.next_page,
     results: posts,
   }
-
-  console.log(JSON.stringify(postsPagination, null, 2));
-  
   return {
     props: { postsPagination }
   }
